@@ -1,10 +1,12 @@
 import settingState from '@/store/setting/state'
-import { downloadFile, existsFile, mkdir, privateStorageDirectoryPath, unlink } from '@/utils/fs'
+import { downloadFile, existsFile, mkdir, moveFile, privateStorageDirectoryPath, readDir, temporaryDirectoryPath, unlink } from '@/utils/fs'
 import { formatMusicName, toast } from '@/utils/tools'
 import { getMusicUrl } from './online'
 import { getPlayQuality } from './utils'
+import { refreshDownloadList } from './downloadList'
 
-const downloadDirectoryPath = `${privateStorageDirectoryPath}/downloads`
+const privateDownloadDirectoryPath = `${privateStorageDirectoryPath}/downloads`
+const temporaryDownloadDirectoryPath = `${temporaryDirectoryPath}/downloads`
 const activeDownloads = new Set<string>()
 
 const getFileExtension = (url: string, quality: LX.Quality) => {
@@ -28,29 +30,39 @@ export const downloadMusic = async(musicInfo: LX.Music.MusicInfoOnline) => {
   }
   activeDownloads.add(downloadId)
 
-  let filePath = ''
+  let tempFilePath = ''
   try {
     const quality = getPlayQuality(settingState.setting['player.playQuality'], musicInfo)
     const url = await getMusicUrl({ musicInfo, quality, isRefresh: false })
-    if (!(await existsFile(downloadDirectoryPath))) await mkdir(downloadDirectoryPath)
+    const downloadDirectoryPath = settingState.setting['download.savePath'] || privateDownloadDirectoryPath
+    if (downloadDirectoryPath == privateDownloadDirectoryPath && !(await existsFile(downloadDirectoryPath))) await mkdir(downloadDirectoryPath)
 
-    filePath = `${downloadDirectoryPath}/${getFileName(musicInfo, quality, url)}`
-    if (await existsFile(filePath)) {
+    const fileName = getFileName(musicInfo, quality, url)
+    if ((await readDir(downloadDirectoryPath)).some(file => file.isFile && file.name == fileName)) {
       toast(global.i18n.t('download_already_exists_tip'))
       return
     }
 
-    const { promise } = downloadFile(url, filePath, {
+    if (!(await existsFile(temporaryDownloadDirectoryPath))) await mkdir(temporaryDownloadDirectoryPath)
+    tempFilePath = `${temporaryDownloadDirectoryPath}/${Date.now()}-${Math.random().toString(36).slice(2)}.${getFileExtension(url, quality)}`
+
+    const { promise } = downloadFile(url, tempFilePath, {
       connectionTimeout: 20000,
       readTimeout: 30000,
     })
     const result = await promise
     if (result.statusCode < 200 || result.statusCode >= 300) throw new Error(`HTTP ${result.statusCode}`)
+    await moveFile(tempFilePath, `${downloadDirectoryPath}/${fileName}`)
+    tempFilePath = ''
+    await refreshDownloadList().catch((error) => {
+      console.warn('Failed to refresh download list', error)
+    })
+    global.app_event.downloadListUpdate()
     toast(global.i18n.t('download_success_tip', { name: musicInfo.name }))
   } catch (error) {
-    if (filePath) {
+    if (tempFilePath) {
       try {
-        if (await existsFile(filePath)) await unlink(filePath)
+        if (await existsFile(tempFilePath)) await unlink(tempFilePath)
       } catch (cleanupError) {
         console.warn('Failed to remove incomplete download', cleanupError)
       }

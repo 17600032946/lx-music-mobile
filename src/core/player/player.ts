@@ -307,6 +307,21 @@ const randomNextMusicInfo = {
   info: null as LX.Player.PlayMusicInfo | null,
   // index: -1,
 }
+const getRandomIndex = (list: Array<LX.Music.MusicInfo | LX.Download.ListItem>, currentMusicInfo?: LX.Music.MusicInfo | LX.Download.ListItem) => {
+  const seenIds = new Set<string>()
+  const candidates = list.filter(musicInfo => {
+    if (musicInfo.id == currentMusicInfo?.id || seenIds.has(musicInfo.id)) return false
+    seenIds.add(musicInfo.id)
+    return true
+  })
+  if (candidates.length) {
+    const musicInfo = candidates[getRandom(0, candidates.length)]
+    return list.findIndex(item => item.id == musicInfo.id)
+  }
+  if (!list.length) return -1
+  const currentIndex = list.findIndex(item => item.id == currentMusicInfo?.id)
+  return currentIndex < 0 ? 0 : currentIndex
+}
 export const resetRandomNextMusicInfo = () => {
   if (randomNextMusicInfo.info) {
     randomNextMusicInfo.info = null
@@ -374,7 +389,7 @@ export const getNextPlayMusicInfo = async(): Promise<LX.Player.PlayMusicInfo | n
       nextIndex = playerIndex === filteredList.length - 1 ? 0 : playerIndex + 1
       break
     case 'random':
-      nextIndex = getRandom(0, filteredList.length)
+      nextIndex = getRandomIndex(filteredList, playMusicInfo.musicInfo ?? undefined)
       break
     case 'list':
       nextIndex = playerIndex === filteredList.length - 1 ? -1 : playerIndex + 1
@@ -484,7 +499,7 @@ export const playNext = async(isAutoToggle = false): Promise<void> => {
       nextIndex = playerIndex === filteredList.length - 1 ? 0 : playerIndex + 1
       break
     case 'random':
-      nextIndex = getRandom(0, filteredList.length)
+      nextIndex = getRandomIndex(filteredList, playMusicInfo.musicInfo ?? undefined)
       break
     case 'list':
       nextIndex = playerIndex === filteredList.length - 1 ? -1 : playerIndex + 1
@@ -568,7 +583,7 @@ export const playPrev = async(isAutoToggle = false): Promise<void> => {
     }
     switch (togglePlayMethod) {
       case 'random':
-        nextIndex = getRandom(0, filteredList.length)
+        nextIndex = getRandomIndex(filteredList, playMusicInfo.musicInfo ?? undefined)
         break
       case 'listLoop':
       case 'list':
