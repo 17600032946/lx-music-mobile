@@ -6,6 +6,17 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [1.9.2](https://github.com/17600032946/lx-music-mobile/compare/v1.9.1...v1.9.2) - 2026-10-21
+
+### 新增
+
+- 支持从歌曲更多菜单下载歌曲，并在设置中选择下载目录
+- 新增下载列表，可查看、播放和删除已下载歌曲
+
+### 优化
+
+- 随机播放一轮内优先播放未播放歌曲，减少重复
+
 ## [1.9.1](https://github.com/lyswhut/lx-music-mobile/compare/v1.9.0...v1.9.1) - 2026-09-19
 
 ### 优化
