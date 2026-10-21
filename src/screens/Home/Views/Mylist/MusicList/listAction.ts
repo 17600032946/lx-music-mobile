@@ -12,6 +12,7 @@ import { type Metadata } from '@/components/MetadataEditModal'
 import musicSdk from '@/utils/musicSdk'
 import { getListMusicSync } from '@/utils/listManage'
 import { clearMusicUrlByMusic } from '@/utils/data'
+import { downloadMusic } from '@/core/music/downloadMusic'
 
 export const handlePlay = (listId: SelectInfo['listId'], index: SelectInfo['index']) => {
   void playList(listId, index)
@@ -72,6 +73,14 @@ export const handleShare = (musicInfo: SelectInfo['musicInfo']) => {
   shareMusic(settingState.setting['common.shareType'], settingState.setting['download.fileName'], musicInfo)
 }
 
+
+export const handleDownload = async({ musicInfo, selectedList }: SelectInfo) => {
+  const list = selectedList.length ? selectedList : [musicInfo]
+  for (const item of list) {
+    if (item.source == 'local') continue
+    await downloadMusic(item)
+  }
+}
 
 export const searchListMusic = (list: LX.Music.MusicInfo[], text: string) => {
   const fullMathNameResults = new Set<LX.Music.MusicInfo>()

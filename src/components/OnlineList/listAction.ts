@@ -10,6 +10,8 @@ import playerState from '@/store/player/state'
 import musicSdk from '@/utils/musicSdk'
 import { toOldMusicInfo } from '@/utils'
 import { clearMusicUrlByMusic } from '@/utils/data'
+import { downloadMusic } from '@/core/music/downloadMusic'
+import type { SelectInfo } from './ListMenu'
 
 export const handlePlay = (musicInfo: LX.Music.MusicInfoOnline) => {
   void addListMusics(LIST_IDS.DEFAULT, [musicInfo], settingState.setting['list.addMusicLocationType']).then(() => {
@@ -30,6 +32,11 @@ export const handlePlayLater = (musicInfo: LX.Music.MusicInfoOnline, selectedLis
 
 export const handleShare = (musicInfo: LX.Music.MusicInfoOnline) => {
   shareMusic(settingState.setting['common.shareType'], settingState.setting['download.fileName'], musicInfo)
+}
+
+export const handleDownload = async({ musicInfo, selectedList }: SelectInfo) => {
+  const list = selectedList.length ? selectedList : [musicInfo]
+  for (const item of list) await downloadMusic(item)
 }
 
 export const handleShowMusicSourceDetail = async(minfo: LX.Music.MusicInfoOnline) => {
